@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
 const servicesRoutes = require('./routes/services');
 const alertsRoutes = require('./routes/alerts');
+const placesRoutes = require('./routes/places');
 
 const app = express();
 app.use(cors());
@@ -23,6 +24,7 @@ async function start() {
     app.use('/api/profile', profileRoutes);
     app.use('/api/services', servicesRoutes);
     app.use('/api/alerts', alertsRoutes);
+    app.use('/api/places', placesRoutes);
 
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   } catch (err) {

@@ -14,6 +14,8 @@ import theme from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { BACKEND_URL } from '../../config/apiConfig';
 import Loader from '../../components/common/Loader';
+import * as Location from 'expo-location';
+import { getUserLocation } from '../../services/locationService';
 
 const SAMPLE_ALERTS = [
   { id: 'a1', type: 'HighSmog', title: 'Heavy smog near industrial area', tag: 'HighSmog', location: 'Sector 18, Industrial Area', time: '2/11/2026, 7:35 PM', verified: true, upvotes: 15 },
@@ -22,10 +24,10 @@ const SAMPLE_ALERTS = [
 ];
 
 const SAMPLE_SERVICES = [
-  { id: 's1', category: 'Hospitals', name: 'Apollo Hospital', address: 'MG Road, Sector 12', distance: '1.2 km', emergency: true, rating: 4.5 },
-  { id: 's2', category: 'Hospitals', name: 'Max Hospital', address: 'Nehru Place, Sector 18', distance: '2.5 km', emergency: true, rating: 4.3 },
-  { id: 's3', category: 'Pharmacies', name: 'MedPlus Pharmacy', address: 'Main Market, Sector 8', distance: '0.5 km', open24: true, rating: 4.2 },
-  { id: 's4', category: 'Cooling', name: 'Community Center - Sector 5', address: 'Community Park, Sector 5', distance: '0.9 km', capacity: 'High' },
+  { id: 's1', category: 'Hospitals', name: 'Apollo Hospital', address: 'MG Road, Sector 12', distance: '1.2 km', emergency: true, rating: 4.5, latitude: 28.7046, longitude: 77.1025, phone: '+911234567890' },
+  { id: 's2', category: 'Hospitals', name: 'Max Hospital', address: 'Nehru Place, Sector 18', distance: '2.5 km', emergency: true, rating: 4.3, latitude: 28.7060, longitude: 77.1080, phone: '+911234567891' },
+  { id: 's3', category: 'Pharmacies', name: 'MedPlus Pharmacy', address: 'Main Market, Sector 8', distance: '0.5 km', open24: true, rating: 4.2, latitude: 28.7038, longitude: 77.1010, phone: '+911234567892' },
+  { id: 's4', category: 'Cooling', name: 'Community Center - Sector 5', address: 'Community Park, Sector 5', distance: '0.9 km', capacity: 'High', latitude: 28.7052, longitude: 77.1005, phone: '+911234567893' },
 ];
 
 export default function CommunityScreen() {
@@ -34,11 +36,30 @@ export default function CommunityScreen() {
   const [alerts, setAlerts] = useState(null);
   const [services, setServices] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [userLocation, setUserLocation] = useState(null);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const coords = await getUserLocation();
+          if (!mounted) return;
+          setUserLocation({ coords });
+        }
+      } catch (e) {
+        // ignore location errors
+      }
+    })();
+
+    return () => (mounted = false);
   }, []);
 
   useEffect(() => {
@@ -49,8 +70,31 @@ export default function CommunityScreen() {
         const aRes = await fetch(`${BACKEND_URL}/api/alerts`);
         const alertsJson = aRes.ok ? await aRes.json() : SAMPLE_ALERTS;
 
-        const sRes = await fetch(`${BACKEND_URL}/api/services${category && category !== 'All' ? `?category=${category}` : ''}`);
-        const servicesJson = sRes.ok ? await sRes.json() : SAMPLE_SERVICES;
+        let servicesJson = null;
+        // if we have userLocation, request server Places proxy
+        if (userLocation && userLocation.coords) {
+          try {
+            const lat = userLocation.coords.latitude;
+            const lon = userLocation.coords.longitude;
+            const typeMap = { All: '', Hospitals: 'hospital', Pharmacies: 'pharmacy', Cooling: 'point_of_interest' };
+            const type = typeMap[category] || '';
+            const url = `${BACKEND_URL}/api/places?lat=${lat}&lon=${lon}${type ? `&type=${type}` : ''}&radius=5000`;
+            const sRes = await fetch(url);
+            servicesJson = sRes.ok ? await sRes.json() : null;
+            // map results into same shape as sample
+            if (servicesJson && Array.isArray(servicesJson)) {
+              servicesJson = servicesJson.map((p) => ({ id: p.id, category: category === 'All' ? 'Services' : category, name: p.name, address: p.address, latitude: p.latitude, longitude: p.longitude, rating: p.rating }));
+            }
+          } catch (e) {
+            servicesJson = null;
+          }
+        }
+
+        if (!servicesJson) {
+          // fallback to legacy services API or local sample
+          const sRes = await fetch(`${BACKEND_URL}/api/services${category && category !== 'All' ? `?category=${category}` : ''}`);
+          servicesJson = sRes.ok ? await sRes.json() : SAMPLE_SERVICES;
+        }
 
         if (!mounted) return;
         setAlerts(alertsJson || SAMPLE_ALERTS);
@@ -64,7 +108,7 @@ export default function CommunityScreen() {
 
     fetchData();
     return () => (mounted = false);
-  }, [category]);
+  }, [category, userLocation]);
 
   const filteredAlerts = useMemo(() => {
     if (!alerts) return SAMPLE_ALERTS;
@@ -74,13 +118,52 @@ export default function CommunityScreen() {
 
   const filteredServices = useMemo(() => {
     if (!services) return SAMPLE_SERVICES;
-    let items = services;
+    // compute distances if we have userLocation and service coords
+    const withDistance = services.map((s) => {
+      if (s.latitude && s.longitude && userLocation && userLocation.coords) {
+        const toRad = (v) => (v * Math.PI) / 180;
+        const R = 6371; // km
+        const dLat = toRad(s.latitude - userLocation.coords.latitude);
+        const dLon = toRad(s.longitude - userLocation.coords.longitude);
+        const lat1 = toRad(userLocation.coords.latitude);
+        const lat2 = toRad(s.latitude);
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const d = R * c;
+        return { ...s, __distanceKm: d };
+      }
+      return s;
+    });
+    let items = withDistance;
     if (category !== 'All') items = items.filter((s) => (category === 'Cooling' ? s.category === 'Cooling' : s.category === category));
     if (!query) return items;
     return items.filter((s) => s.name.toLowerCase().includes(query.toLowerCase()) || s.address.toLowerCase().includes(query.toLowerCase()));
   }, [query, category, services]);
 
-  const openMaps = (address) => {
+  const openMaps = (serviceOrAddress) => {
+    // Accept either a service object with latitude/longitude or an address string
+    const hasCoords = serviceOrAddress && serviceOrAddress.latitude && serviceOrAddress.longitude;
+    if (hasCoords) {
+      const dest = `${serviceOrAddress.latitude},${serviceOrAddress.longitude}`;
+      if (userLocation && userLocation.coords) {
+        const { latitude, longitude } = userLocation.coords;
+        const url = `https://www.google.com/maps/dir/?api=1&origin=${latitude},${longitude}&destination=${dest}&travelmode=driving`;
+        Linking.openURL(url).catch(() => {});
+        return;
+      }
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`;
+      Linking.openURL(url).catch(() => {});
+      return;
+    }
+
+    const address = typeof serviceOrAddress === 'string' ? serviceOrAddress : (serviceOrAddress?.address || '');
+    if (userLocation && userLocation.coords) {
+      const { latitude, longitude } = userLocation.coords;
+      const url = `https://www.google.com/maps/dir/?api=1&origin=${latitude},${longitude}&destination=${encodeURIComponent(address)}&travelmode=driving`;
+      Linking.openURL(url).catch(() => {});
+      return;
+    }
+
     const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
     Linking.openURL(url).catch(() => {});
   };
@@ -148,7 +231,23 @@ export default function CommunityScreen() {
         ))
       )}
 
-      <Text style={styles.sectionTitle}>Nearby Services</Text>
+      <View style={styles.sectionHeaderRow}>
+        <Text style={styles.sectionTitle}>Nearby Services</Text>
+        <TouchableOpacity style={styles.mapAction} onPress={() => {
+          const cat = category && category !== 'All' ? category : 'services';
+          if (userLocation && userLocation.coords) {
+            const { latitude, longitude } = userLocation.coords;
+            const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cat)}+near+${latitude},${longitude}`;
+            Linking.openURL(url).catch(() => {});
+          } else {
+            const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cat)}`;
+            Linking.openURL(url).catch(() => {});
+          }
+        }}>
+          <Ionicons name="map-outline" size={18} color={theme.colors.primary} />
+          <Text style={[styles.chipText, { marginLeft: 8, color: theme.colors.primary }]}>Open Live Map</Text>
+        </TouchableOpacity>
+      </View>
       {loading ? (
         <Loader />
       ) : (
@@ -159,7 +258,7 @@ export default function CommunityScreen() {
                 <Text style={styles.serviceName}>{s.name}</Text>
                 <Text style={styles.serviceMeta}>{s.address}</Text>
                 <View style={styles.serviceMetaRow}>
-                  <View style={styles.smallBadge}><Text style={styles.smallBadgeText}>{s.distance}</Text></View>
+                  <View style={styles.smallBadge}><Text style={styles.smallBadgeText}>{s.__distanceKm ? `${s.__distanceKm.toFixed(1)} km` : s.distance}</Text></View>
                   {s.emergency ? <View style={[styles.smallBadge, { backgroundColor: '#feeaea' }]}><Text style={[styles.smallBadgeText, { color: theme.colors.danger }]}>24/7 Emergency</Text></View> : null}
                   {s.open24 ? <View style={[styles.smallBadge, { backgroundColor: '#e9fdf3' }]}><Text style={[styles.smallBadgeText, { color: theme.colors.success }]}>Open24x7</Text></View> : null}
                   {s.capacity ? <View style={[styles.smallBadge, { backgroundColor: '#eef7ff' }]}><Text style={[styles.smallBadgeText, { color: theme.colors.secondary }]}>{`Capacity: ${s.capacity}`}</Text></View> : null}
@@ -167,7 +266,7 @@ export default function CommunityScreen() {
               </View>
 
               <View style={styles.serviceActions}>
-                <TouchableOpacity style={styles.outlineBtn} onPress={() => openMaps(s.address)} accessibilityLabel={`Get directions to ${s.name}`}>
+                <TouchableOpacity style={styles.outlineBtn} onPress={() => openMaps(s)} accessibilityLabel={`Get directions to ${s.name}`}>
                   <Ionicons name="navigate-outline" size={16} color={theme.colors.textPrimary} />
                   <Text style={styles.outlineBtnText}>Directions</Text>
                 </TouchableOpacity>
@@ -241,6 +340,8 @@ const styles = StyleSheet.create({
   chipText: { color: theme.colors.textSecondary },
   chipTextActive: { color: theme.colors.primary, fontWeight: '600' },
   sectionTitle: { fontSize: theme.fonts.sizes.lg, fontWeight: '600', marginBottom: theme.spacing.sm, color: theme.colors.textPrimary },
+  sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  mapAction: { flexDirection: 'row', alignItems: 'center' },
   cardText: { fontSize: theme.fonts.sizes.sm, color: theme.colors.textSecondary },
   alertRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   alertLeft: { flex: 1 },
