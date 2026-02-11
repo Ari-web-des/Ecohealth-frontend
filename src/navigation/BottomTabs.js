@@ -5,6 +5,7 @@ import HomeScreen from '../screens/home/HomeScreen';
 import ClimateScreen from '../screens/climate/ClimateScreen';
 import HealthScreen from '../screens/health/HealthScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
+import CommunityScreen from '../screens/community/CommunityScreen';
 
 import theme from '../constants/theme';
 
@@ -36,6 +37,9 @@ export default function BottomTabs() {
             case 'Health':
               iconName = 'heart-outline';
               break;
+            case 'Community':
+              iconName = 'megaphone-outline';
+              break;
             case 'Profile':
               iconName = 'person-outline';
               break;
@@ -49,6 +53,7 @@ export default function BottomTabs() {
       <Tab.Screen name="Climate" component={ClimateScreen} />
       <Tab.Screen name="Health" component={HealthScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Community" component={CommunityScreen} />
     </Tab.Navigator>
   );
 }

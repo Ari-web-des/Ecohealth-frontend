@@ -7,7 +7,8 @@ import Loader from "../common/Loader";
 // import EmptyState from "../common/EmptyState";
 
 export default function WeatherDetailsCard() {
-  const { climate, loading } = useClimate();
+  const { climate: hookClimate, loading } = useClimate();
+  const climate = hookClimate;
   if (loading) return <Loader />;
   if (!climate) return null;
 

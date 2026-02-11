@@ -1,4 +1,4 @@
-import { ScrollView, Text, StyleSheet } from "react-native";
+import { ScrollView, View, Text, StyleSheet } from "react-native";
 import theme from "../../constants/theme";
 
 import AQICard from "../../components/climate/AQICard";
@@ -6,16 +6,23 @@ import WeatherDetailsCard from "../../components/climate/WeatherDetailsCard";
 import TemperatureChart from "../../components/climate/TemperatureChart";
 import AQIChart from "../../components/climate/AQIChart";
 import AQILegend from "../../components/climate/AQILegend";
+import useClimate from "../../hooks/useClimate";
+import FullscreenLoader from "../../components/common/FullscreenLoader";
 
 export default function ClimateScreen() {
+  const { climate, loading } = useClimate();
+
+  if (loading) return <FullscreenLoader message="Loading climate data..." />;
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.heading}>Climate</Text>
-      <Text style={styles.subHeading}>Air quality & weather conditions</Text>
+      <View style={styles.headerContainer}>
+        <Text style={styles.heading}>Climate</Text>
+        <Text style={styles.subHeading}>Air quality & weather conditions</Text>
+      </View>
 
       <AQICard />
       <WeatherDetailsCard />
-       <TemperatureChart />
+      <TemperatureChart />
       <AQIChart /> 
       <AQILegend />
     </ScrollView>
@@ -31,12 +38,17 @@ const styles = StyleSheet.create({
     padding: theme.spacing.md,
   },
   heading: {
-    fontSize: theme.fonts.sizes.xl,
+    fontSize: theme.fonts.sizes.xxl,
     fontWeight: "700",
     color: theme.colors.secondary,
   },
   subHeading: {
+    marginTop: 6,
     marginBottom: theme.spacing.lg,
     color: theme.colors.textSecondary,
+  },
+  headerContainer: {
+    paddingBottom: theme.spacing.sm,
+    marginBottom: theme.spacing.sm,
   },
 });

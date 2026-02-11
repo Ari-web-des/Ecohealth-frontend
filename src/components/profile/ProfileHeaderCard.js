@@ -5,7 +5,7 @@ import theme from "../../constants/theme";
 import useLocation from "../../hooks/useLocation";
 import Loader from "../common/Loader";
 
-export default function ProfileHeaderCard() {
+export default function ProfileHeaderCard({ name, email, locationOverride }) {
   const { locationName, loading } = useLocation();
 
   if (loading) return <Loader />;
@@ -17,11 +17,9 @@ export default function ProfileHeaderCard() {
         </View>
 
         <View>
-          <Text style={styles.name}>EcoHealth User</Text>
+          <Text style={styles.name}>{name || 'EcoHealth User'}</Text>
           <Text style={styles.location}>
-            {loading
-              ? "Fetching location..."
-              : locationName || "Location unavailable"}
+            {locationOverride || locationName || 'Location unavailable'}
           </Text>
         </View>
       </View>

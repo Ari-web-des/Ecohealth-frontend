@@ -1,25 +1,43 @@
-import { View, Text, StyleSheet } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, Switch } from 'react-native';
 import AppCard from '../common/AppCard';
 import theme from '../../constants/theme';
 
-export default function PreferencesCard() {
+export default function PreferencesCard({ preferences = {}, onChange = () => {} }) {
+  const { hydrationAlerts = true, heatAlerts = true, aqiAlerts = true } = preferences;
+
   return (
     <AppCard>
       <Text style={styles.title}>Preferences</Text>
 
       <View style={styles.row}>
-        <Text style={styles.label}>Climate Alerts</Text>
-        <Text style={styles.value}>Enabled</Text>
+        <Text style={styles.label}>Hydration Alerts</Text>
+        <Switch
+          value={hydrationAlerts}
+          onValueChange={(v) => onChange({ ...preferences, hydrationAlerts: v })}
+          thumbColor={theme.colors.primary}
+          accessibilityLabel="Toggle hydration alerts"
+        />
       </View>
 
       <View style={styles.row}>
-        <Text style={styles.label}>Health Notifications</Text>
-        <Text style={styles.value}>Enabled</Text>
+        <Text style={styles.label}>Heat Alerts</Text>
+        <Switch
+          value={heatAlerts}
+          onValueChange={(v) => onChange({ ...preferences, heatAlerts: v })}
+          thumbColor={theme.colors.primary}
+          accessibilityLabel="Toggle heat alerts"
+        />
       </View>
 
       <View style={styles.row}>
-        <Text style={styles.label}>Units</Text>
-        <Text style={styles.value}>Metric</Text>
+        <Text style={styles.label}>AQI Alerts</Text>
+        <Switch
+          value={aqiAlerts}
+          onValueChange={(v) => onChange({ ...preferences, aqiAlerts: v })}
+          thumbColor={theme.colors.primary}
+          accessibilityLabel="Toggle AQI alerts"
+        />
       </View>
     </AppCard>
   );

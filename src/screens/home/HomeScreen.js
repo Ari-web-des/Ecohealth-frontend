@@ -6,9 +6,24 @@ import theme from "../../constants/theme";
 
 import ClimateSummaryCard from "../../components/climate/ClimateSummaryCard";
 import HealthSummaryCard from "../../components/health/HealthSummaryCard";
+import HealthOverviewCard from "../../components/health/HealthOverviewCard";
+import HealthMetricsCard from "../../components/health/HealthMetricsCard";
+import HealthRecommendationsCard from "../../components/health/HealthRecommendationsCard";
+import useClimate from "../../hooks/useClimate";
+import useHealth from "../../hooks/useHealth";
+import FullscreenLoader from "../../components/common/FullscreenLoader";
+import ActivityPlanner from '../../components/health/ActivityPlanner';
+import useLocation from '../../hooks/useLocation';
+import { useContext } from 'react';
+import { AuthContext } from '../../context/AuthContext';
+
 
 export default function HomeScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const { climate, loading: climateLoading } = useClimate();
+  const { health, loading: healthLoading } = useHealth();
+  const { coords } = useLocation();
+  const { auth } = useContext(AuthContext);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -17,6 +32,10 @@ export default function HomeScreen() {
       useNativeDriver: true,
     }).start();
   }, []);
+
+  if (climateLoading && healthLoading) {
+    return <FullscreenLoader />;
+  }
 
   return (
     <Animated.View style={{ opacity: fadeAnim }}>
@@ -27,7 +46,16 @@ export default function HomeScreen() {
         <Text style={styles.heading}>EcoHealth</Text>
         <Text style={styles.subHeading}>Climate & Health Overview</Text>
 
-        <ClimateSummaryCard />
+        <ClimateSummaryCard climate={climate} />
+
+        {/* Activity Planner moved to Home for quick access */}
+        <ActivityPlanner location={coords ? { lat: coords.latitude, lon: coords.longitude } : null} userProfile={auth?.user || null} />
+
+        <HealthOverviewCard />
+
+        <HealthMetricsCard />
+
+        <HealthRecommendationsCard />
         <HealthSummaryCard />
       </ScrollView>
     </Animated.View>
@@ -41,6 +69,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: theme.spacing.md,
+    paddingBottom: 120,
   },
   heading: {
     fontSize: theme.fonts.sizes.xxl,

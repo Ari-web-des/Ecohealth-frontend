@@ -8,9 +8,10 @@ import EmptyState from "../common/EmptyState";
 import aqiScale from "../../constants/aqiScale";
 
 export default function AQICard() {
-  const { climate, loading } = useClimate();
+  const { climate: hookClimate, loading } = useClimate();
+  const climate = hookClimate;
   if (loading) return <Loader />;
-  if (!climate) return null; // <EmptyState message="Climate data unavailable" />;
+  if (!climate) return <EmptyState message="Climate data unavailable" />;
   const getAQIColor = (aqi) => {
     const level = aqiScale.find((item) => aqi >= item.min && aqi <= item.max);
     return level?.color || theme.colors.textPrimary;
