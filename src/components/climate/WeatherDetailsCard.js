@@ -2,13 +2,12 @@ import { View, Text, StyleSheet } from "react-native";
 import AppCard from "../common/AppCard";
 import theme from "../../constants/theme";
 // import mockClimateData from '../../data/mockClimateData';
-import useClimate from "../../hooks/useClimate";
+import { useClimateContext } from "../../context/ClimateContext";
 import Loader from "../common/Loader";
 // import EmptyState from "../common/EmptyState";
 
 export default function WeatherDetailsCard() {
-  const { climate: hookClimate, loading } = useClimate();
-  const climate = hookClimate;
+ const { climate, loading } = useClimateContext();
   if (loading) return <Loader />;
   if (!climate) return null;
 

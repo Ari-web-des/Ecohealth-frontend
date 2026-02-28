@@ -11,18 +11,19 @@ import HealthSummaryCard from "../../components/health/HealthSummaryCard";
 import HealthOverviewCard from "../../components/health/HealthOverviewCard";
 import HealthMetricsCard from "../../components/health/HealthMetricsCard";
 import HealthRecommendationsCard from "../../components/health/HealthRecommendationsCard";
-import useClimate from "../../hooks/useClimate";
+import { useClimateContext } from "../../context/ClimateContext";
 import useHealth from "../../hooks/useHealth";
 import FullscreenLoader from "../../components/common/FullscreenLoader";
 import ActivityPlanner from "../../components/health/ActivityPlanner";
 import useLocation from "../../hooks/useLocation";
 import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
+import HealthSafetySection from "../../components/health/HealthSafetySection";
 
 export default function HomeScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
-  const { climate, loading: climateLoading } = useClimate();
+  const { climate, loading: climateLoading } = useClimateContext();
   const { health, loading: healthLoading } = useHealth();
   const { coords } = useLocation();
   const { auth } = useContext(AuthContext);
@@ -57,6 +58,7 @@ export default function HomeScreen() {
         <HealthMetricsCard />
         <HealthRecommendationsCard />
         <HealthSummaryCard />
+        <HealthSafetySection />
       </ScrollView>
     </Animated.View>
   );

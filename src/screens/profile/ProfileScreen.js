@@ -1,51 +1,79 @@
-import React, { useEffect, useState, useContext, useRef } from 'react';
-import { ScrollView, Text, StyleSheet, Animated, View, TouchableOpacity, TextInput } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import theme from '../../constants/theme';
-import AppCard from '../../components/common/AppCard';
-import PreferencesCard from '../../components/profile/PreferencesCard';
-import AppInfoCard from '../../components/profile/AppInfoCard';
-import Loader from '../../components/common/Loader';
-import { getProfile, updateProfile } from '../../services/profileService';
-import { AuthContext } from '../../context/AuthContext';
-import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useState, useContext, useRef } from "react";
+import {
+  ScrollView,
+  Text,
+  StyleSheet,
+  Animated,
+  View,
+  TouchableOpacity,
+  TextInput,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import theme from "../../constants/theme";
+import AppCard from "../../components/common/AppCard";
+import PreferencesCard from "../../components/profile/PreferencesCard";
+import AppInfoCard from "../../components/profile/AppInfoCard";
+import Loader from "../../components/common/Loader";
+import { getProfile, updateProfile } from "../../services/profileService";
+import { AuthContext } from "../../context/AuthContext";
+import { useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function ProfileScreen() {
   const { auth, logout } = useContext(AuthContext);
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const userId = auth?.user?.id;
+  const userId = auth?.user?._id;
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(!userId);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedName, setEditedName] = useState('');
-  const [editedLocation, setEditedLocation] = useState('');
+  const [editedProfile, setEditedProfile] = useState({
+    name: "",
+    location: "",
+    age: "",
+    gender: "",
+    occupation: "",
+    healthConditions: [],
+  });
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start();
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 350,
+      useNativeDriver: true,
+    }).start();
   }, []);
 
   useEffect(() => {
     let mounted = true;
-    
+
     // If no userId, user is not logged in
     if (!userId) {
       setLoading(false);
-      setError('Not authenticated');
+      setError("Not authenticated");
       return;
     }
 
     const fetchProfile = async () => {
-      setLoading(true);
-      const data = await getProfile(userId, auth?.token || null);
-      if (!mounted) return;
-      if (data) setProfile(data);
-      else setError('Unable to load profile');
-      setLoading(false);
+      try {
+        const data = await getProfile(userId, auth?.token || null);
+
+        console.log("PROFILE API RESPONSE:", data);
+
+        if (data) {
+          setProfile(data);
+        } else {
+          setError("Unable to load profile");
+        }
+      } catch (err) {
+        console.log("PROFILE ERROR:", err);
+        setError("Unable to load profile");
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchProfile();
@@ -55,49 +83,69 @@ export default function ProfileScreen() {
   const handlePrefChange = async (newPrefs) => {
     setProfile((p) => ({ ...p, preferences: newPrefs }));
     try {
-      await updateProfile(userId, { preferences: newPrefs }, auth?.token || null);
+      await updateProfile(
+        userId,
+        { preferences: newPrefs },
+        auth?.token || null,
+      );
     } catch (e) {
-      setError('Failed to update preferences');
+      setError("Failed to update preferences");
     }
   };
 
   const handleLogout = async () => {
     try {
       await logout();
-      navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+      navigation.reset({ index: 0, routes: [{ name: "Login" }] });
     } catch (e) {
       // ignore
     }
   };
 
   const startEdit = () => {
-    setEditedName(profile?.name || '');
-    setEditedLocation(profile?.location || '');
+    setEditedProfile({
+      name: profile?.name || "",
+      location: profile?.location || "",
+      age: profile?.age?.toString() || "",
+      gender: profile?.gender || "",
+      occupation: profile?.occupation || "",
+      healthConditions: profile?.healthConditions || [],
+    });
     setIsEditing(true);
   };
 
   const handleSave = async () => {
     setLoading(true);
     try {
-      const payload = { name: editedName, location: editedLocation };
+      const payload = {
+        name: editedProfile.name,
+        location: editedProfile.location,
+        age: Number(editedProfile.age),
+        gender: editedProfile.gender,
+        occupation: editedProfile.occupation,
+        healthConditions: editedProfile.healthConditions,
+      };
       const updated = await updateProfile(userId, payload, auth?.token || null);
       if (updated) setProfile(updated);
       setIsEditing(false);
     } catch (e) {
-      setError('Failed to save profile');
+      setError("Failed to save profile");
     } finally {
       setLoading(false);
     }
   };
+
+  console.log("AUTH:", auth);
+  console.log("USER ID:", userId);
 
   const reloadProfile = async () => {
     setLoading(true);
     try {
       const data = await getProfile(userId, auth?.token || null);
       if (data) setProfile(data);
-      else setError('Unable to load profile');
+      else setError("Unable to load profile");
     } catch (e) {
-      setError('Unable to load profile');
+      setError("Unable to load profile");
     } finally {
       setLoading(false);
     }
@@ -107,22 +155,35 @@ export default function ProfileScreen() {
 
   if (!profile || error) {
     return (
-      <Animated.View style={{ opacity: fadeAnim }}>
-        <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top }]}>
+      <Animated.View style={{ opacity: fadeAnim, flex: 1 }}>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={[
+            styles.content,
+            { paddingTop: insets.top, flexGrow: 1 },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
           <AppCard>
             <Text style={styles.name}>Profile unavailable</Text>
             <Text style={styles.subHeading}>
-              {error === 'Not authenticated' 
-                ? 'You need to log in to view your profile.' 
-                : 'Unable to connect to the profile service. Please ensure the backend server is running (http://localhost:5000) and try reloading.'}
+              {error === "Not authenticated"
+                ? "You need to log in to view your profile."
+                : "Unable to connect to the profile service. Please ensure the backend server is running (http://localhost:5000) and try reloading."}
             </Text>
-            <View style={{ flexDirection: 'row', marginTop: theme.spacing.md }}>
-              {error !== 'Not authenticated' && (
-                <TouchableOpacity style={[styles.saveBtn, { marginRight: theme.spacing.sm }]} onPress={reloadProfile}>
+            <View style={{ flexDirection: "row", marginTop: theme.spacing.md }}>
+              {error !== "Not authenticated" && (
+                <TouchableOpacity
+                  style={[styles.saveBtn, { marginRight: theme.spacing.sm }]}
+                  onPress={reloadProfile}
+                >
                   <Text style={styles.saveText}>Reload</Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity style={styles.logoutBtn} onPress={() => navigation.navigate('Login')}>
+              <TouchableOpacity
+                style={styles.logoutBtn}
+                onPress={() => navigation.navigate("Login")}
+              >
                 <Text style={styles.logoutText}>Login</Text>
               </TouchableOpacity>
             </View>
@@ -133,8 +194,11 @@ export default function ProfileScreen() {
   }
 
   return (
-    <Animated.View style={{ opacity: fadeAnim }}>
-      <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top }]}>
+    <Animated.View style={{ opacity: fadeAnim, flex: 1 }}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top }]}
+      >
         <Text style={styles.heading}>Profile</Text>
         <Text style={styles.subHeading}>Your account & preferences</Text>
 
@@ -147,25 +211,80 @@ export default function ProfileScreen() {
             <View style={styles.headerInfo}>
               {isEditing ? (
                 <>
-                  <TextInput value={editedName} onChangeText={setEditedName} style={styles.input} placeholder="Display name" />
-                  <TextInput value={editedLocation} onChangeText={setEditedLocation} style={styles.input} placeholder="Location (city)" />
+                  <TextInput
+                    value={editedProfile.name}
+                    onChangeText={(t) =>
+                      setEditedProfile({ ...editedProfile, name: t })
+                    }
+                    style={styles.input}
+                    placeholder="Display name"
+                  />
+
+                  <TextInput
+                    value={editedProfile.location}
+                    onChangeText={(t) =>
+                      setEditedProfile({ ...editedProfile, location: t })
+                    }
+                    style={styles.input}
+                    placeholder="City"
+                  />
+
+                  <TextInput
+                    value={editedProfile.age}
+                    onChangeText={(t) =>
+                      setEditedProfile({ ...editedProfile, age: t })
+                    }
+                    style={styles.input}
+                    placeholder="Age"
+                    keyboardType="numeric"
+                  />
+
+                  <TextInput
+                    value={editedProfile.gender}
+                    onChangeText={(t) =>
+                      setEditedProfile({ ...editedProfile, gender: t })
+                    }
+                    style={styles.input}
+                    placeholder="Gender"
+                  />
+
+                  <TextInput
+                    value={editedProfile.occupation}
+                    onChangeText={(t) =>
+                      setEditedProfile({ ...editedProfile, occupation: t })
+                    }
+                    style={styles.input}
+                    placeholder="Occupation"
+                  />
                 </>
               ) : (
                 <>
-                  <Text style={styles.name}>{profile?.name || 'EcoHealth User'}</Text>
+                  <Text style={styles.name}>
+                    {profile?.name || "EcoHealth User"}
+                  </Text>
                   <Text style={styles.email}>{profile?.email}</Text>
-                  <Text style={styles.location}>{profile?.location || 'Location not set'}</Text>
+                  <Text style={styles.location}>
+                    {profile?.location || "Location not set"}
+                  </Text>
                 </>
               )}
             </View>
 
             <View style={styles.headerActions}>
               {isEditing ? (
-                <TouchableOpacity style={styles.saveBtn} onPress={handleSave} accessibilityRole="button">
+                <TouchableOpacity
+                  style={styles.saveBtn}
+                  onPress={handleSave}
+                  accessibilityRole="button"
+                >
                   <Text style={styles.saveText}>Save</Text>
                 </TouchableOpacity>
               ) : (
-                <TouchableOpacity style={styles.editBtn} onPress={startEdit} accessibilityRole="button">
+                <TouchableOpacity
+                  style={styles.editBtn}
+                  onPress={startEdit}
+                  accessibilityRole="button"
+                >
                   <Text style={styles.editText}>Edit</Text>
                 </TouchableOpacity>
               )}
@@ -173,14 +292,24 @@ export default function ProfileScreen() {
           </View>
         </AppCard>
 
-        <PreferencesCard preferences={profile?.preferences} onChange={handlePrefChange} />
+        <PreferencesCard
+          preferences={profile?.preferences}
+          onChange={handlePrefChange}
+        />
         <AppInfoCard />
 
         <View style={styles.actionsRow}>
-          <TouchableOpacity style={styles.primaryBtn} onPress={() => navigation.navigate('Community')}>
+          <TouchableOpacity
+            style={styles.primaryBtn}
+            onPress={() => navigation.navigate("Community")}
+          >
             <Text style={styles.primaryText}>Community</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} accessibilityRole="button">
+          <TouchableOpacity
+            style={styles.logoutBtn}
+            onPress={handleLogout}
+            accessibilityRole="button"
+          >
             <Text style={styles.logoutText}>Logout</Text>
           </TouchableOpacity>
         </View>
@@ -198,11 +327,11 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: theme.spacing.md,
-    paddingBottom: 120,
+    paddingBottom: 160, // increase slightly
   },
   heading: {
     fontSize: theme.fonts.sizes.xl,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.textPrimary,
   },
   subHeading: {
@@ -215,21 +344,70 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
     marginBottom: theme.spacing.md,
   },
-  rowTop: { flexDirection: 'row', alignItems: 'center' },
-  avatarLarge: { width: 72, height: 72, borderRadius: 36, backgroundColor: theme.colors.primary, justifyContent: 'center', alignItems: 'center', marginRight: theme.spacing.md },
+  rowTop: { flexDirection: "row", alignItems: "center" },
+  avatarLarge: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: theme.colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: theme.spacing.md,
+  },
   headerInfo: { flex: 1 },
-  name: { fontSize: theme.fonts.sizes.lg, fontWeight: '700', color: theme.colors.textPrimary },
+  name: {
+    fontSize: theme.fonts.sizes.lg,
+    fontWeight: "700",
+    color: theme.colors.textPrimary,
+  },
   email: { color: theme.colors.textSecondary, marginTop: 4 },
   location: { color: theme.colors.textSecondary, marginTop: 2 },
-  input: { backgroundColor: '#fff', padding: 10, borderRadius: 8, marginBottom: 8, borderWidth: 1, borderColor: '#E5E7EB' },
+  input: {
+    backgroundColor: "#fff",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
   headerActions: { marginLeft: theme.spacing.md },
-  editBtn: { backgroundColor: theme.colors.card, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: '#E5E7EB' },
-  editText: { color: theme.colors.textPrimary, fontWeight: '600' },
-  saveBtn: { backgroundColor: theme.colors.primary, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8 },
-  saveText: { color: '#fff', fontWeight: '700' },
-  actionsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: theme.spacing.md },
-  primaryBtn: { flex: 1, backgroundColor: '#0EA5A4', paddingVertical: 12, borderRadius: 8, marginRight: theme.spacing.sm, alignItems: 'center' },
-  primaryText: { color: '#fff', fontWeight: '700' },
-  logoutBtn: { flex: 1, backgroundColor: theme.colors.danger, paddingVertical: 12, borderRadius: 8, marginLeft: theme.spacing.sm, alignItems: 'center' },
-  logoutText: { color: '#fff', fontWeight: '600' },
+  editBtn: {
+    backgroundColor: theme.colors.card,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  editText: { color: theme.colors.textPrimary, fontWeight: "600" },
+  saveBtn: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+  },
+  saveText: { color: "#fff", fontWeight: "700" },
+  actionsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: theme.spacing.md,
+  },
+  primaryBtn: {
+    flex: 1,
+    backgroundColor: "#0EA5A4",
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginRight: theme.spacing.sm,
+    alignItems: "center",
+  },
+  primaryText: { color: "#fff", fontWeight: "700" },
+  logoutBtn: {
+    flex: 1,
+    backgroundColor: theme.colors.danger,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginLeft: theme.spacing.sm,
+    alignItems: "center",
+  },
+  logoutText: { color: "#fff", fontWeight: "600" },
 });

@@ -42,14 +42,61 @@ export const getAirQuality = async (lat, lon) => {
 // Get climate trends (fallback to mock data)
 export const getClimateTrends = async (lat, lon) => {
   try {
-    // Mock data for now - returns week of trend data
-    const trends = {
-      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-      temperature: [28, 29, 30, 32, 31, 29, 28],
-      aqi: [85, 92, 105, 115, 108, 98, 88],
+    const [weatherRes, aqiRes] = await Promise.all([
+      fetch(
+        `${WEATHER_BASE_URL}/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${OPEN_WEATHER_API_KEY}`
+      ),
+      fetch(
+        `${WEATHER_BASE_URL}/air_pollution/forecast?lat=${lat}&lon=${lon}&appid=${OPEN_WEATHER_API_KEY}`
+      ),
+    ]);
+
+    const weatherData = await weatherRes.json();
+    const aqiData = await aqiRes.json();
+
+    const groupedTemp = {};
+    const groupedAQI = {};
+
+    // 🔹 Group temperature (take max temp per day)
+    weatherData.list.forEach((item) => {
+      const date = new Date(item.dt * 1000).toDateString();
+      const temp = Math.round(item.main.temp);
+
+      if (!groupedTemp[date] || temp > groupedTemp[date]) {
+        groupedTemp[date] = temp;
+      }
+    });
+
+    // 🔹 AQI conversion same as current AQI mapping
+    const aqiMap = {
+      1: 50,
+      2: 100,
+      3: 200,
+      4: 300,
+      5: 400,
     };
-    return trends;
-  } catch (e) {
+
+    // 🔹 Group AQI (take max AQI per day)
+    aqiData.list.forEach((item) => {
+      const date = new Date(item.dt * 1000).toDateString();
+      const aqiValue = aqiMap[item.main.aqi];
+
+      if (!groupedAQI[date] || aqiValue > groupedAQI[date]) {
+        groupedAQI[date] = aqiValue;
+      }
+    });
+
+    const dates = Object.keys(groupedTemp).slice(0, 5); // 5-day forecast
+
+    return {
+      labels: dates.map((date) =>
+        new Date(date).toLocaleDateString("en-US", { weekday: "short" })
+      ),
+      temperature: dates.map((date) => groupedTemp[date]),
+      aqi: dates.map((date) => groupedAQI[date] || 0),
+    };
+  } catch (error) {
+    console.log("Trend API Error:", error);
     return null;
   }
 };

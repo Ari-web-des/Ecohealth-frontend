@@ -3,15 +3,16 @@ import { Ionicons } from "@expo/vector-icons";
 import AppCard from "../common/AppCard";
 import StatusBadge from "../common/StatusBadge";
 import theme from "../../constants/theme";
-import useHealth from "../../hooks/useHealth";
+// import useHealth from "../../hooks/useHealth";
 import Loader from "../common/Loader";
 import EmptyState from "../common/EmptyState";
 
-export default function HealthOverviewCard() {
-  const { health, loading } = useHealth();
+export default function HealthOverviewCard({ health }) {
+  if (!health) return null;
+  // const { health, loading } = useHealth();
 
-  if (loading) return <Loader />;
-  if (!health) return <EmptyState message="Health data unavailable" />;
+  // if (loading) return <Loader />;
+  // if (!health) return <EmptyState message="Health data unavailable" />;
 
   return (
     <AppCard>

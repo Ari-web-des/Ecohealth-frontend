@@ -1,65 +1,107 @@
-import React from 'react';
-import { View, Text, StyleSheet, Switch } from 'react-native';
-import AppCard from '../common/AppCard';
-import theme from '../../constants/theme';
+import React from "react";
+import { View, Text, StyleSheet, Switch } from "react-native";
+import AppCard from "../common/AppCard";
+import theme from "../../constants/theme";
 
-export default function PreferencesCard({ preferences = {}, onChange = () => {} }) {
-  const { hydrationAlerts = true, heatAlerts = true, aqiAlerts = true } = preferences;
+export default function PreferencesCard({
+  preferences = {},
+  onChange = () => {},
+}) {
+  const {
+    hydrationAlerts = true,
+    heatAlerts = true,
+    aqiAlerts = true,
+
+    morningBriefing = true,
+    extremeWeatherAlerts = true,
+    governmentAlerts = true,
+  } = preferences;
+
+  const updatePref = (key, value) => {
+    onChange({ ...preferences, [key]: value });
+  };
 
   return (
-    <AppCard>
-      <Text style={styles.title}>Preferences</Text>
+    <>
+      {/* ======== CARD 1 — Core Health Preferences ======== */}
+      <AppCard style={styles.card}>
+        <Text style={styles.title}>Health Alert Preferences</Text>
 
-      <View style={styles.row}>
-        <Text style={styles.label}>Hydration Alerts</Text>
-        <Switch
+        <PreferenceRow
+          label="Hydration Alerts"
           value={hydrationAlerts}
-          onValueChange={(v) => onChange({ ...preferences, hydrationAlerts: v })}
-          thumbColor={theme.colors.primary}
-          accessibilityLabel="Toggle hydration alerts"
+          onToggle={(v) => updatePref("hydrationAlerts", v)}
         />
-      </View>
 
-      <View style={styles.row}>
-        <Text style={styles.label}>Heat Alerts</Text>
-        <Switch
+        <PreferenceRow
+          label="Heat Alerts"
           value={heatAlerts}
-          onValueChange={(v) => onChange({ ...preferences, heatAlerts: v })}
-          thumbColor={theme.colors.primary}
-          accessibilityLabel="Toggle heat alerts"
+          onToggle={(v) => updatePref("heatAlerts", v)}
         />
-      </View>
 
-      <View style={styles.row}>
-        <Text style={styles.label}>AQI Alerts</Text>
-        <Switch
+        <PreferenceRow
+          label="AQI Alerts"
           value={aqiAlerts}
-          onValueChange={(v) => onChange({ ...preferences, aqiAlerts: v })}
-          thumbColor={theme.colors.primary}
-          accessibilityLabel="Toggle AQI alerts"
+          onToggle={(v) => updatePref("aqiAlerts", v)}
         />
-      </View>
-    </AppCard>
+      </AppCard>
+
+      {/* ======== CARD 2 — Government & Scheduled Alerts ======== */}
+      <AppCard style={styles.card}>
+        <Text style={styles.title}>Government & Scheduled Alerts</Text>
+
+        <PreferenceRow
+          label="Morning health briefing (8:00 AM)"
+          value={morningBriefing}
+          onToggle={(v) => updatePref("morningBriefing", v)}
+        />
+
+        <PreferenceRow
+          label="Extreme weather/air quality alerts"
+          value={extremeWeatherAlerts}
+          onToggle={(v) => updatePref("extremeWeatherAlerts", v)}
+        />
+
+        <PreferenceRow
+          label="Government disaster alerts (IMD, NDMA, CPCB)"
+          value={governmentAlerts}
+          onToggle={(v) => updatePref("governmentAlerts", v)}
+        />
+      </AppCard>
+    </>
   );
 }
 
+const PreferenceRow = ({ label, value, onToggle }) => (
+  <View style={styles.row}>
+    <Text style={styles.label}>{label}</Text>
+    <Switch
+      value={value}
+      onValueChange={onToggle}
+      trackColor={{ false: "#ccc", true: theme.colors.primary }}
+      thumbColor="#fff"
+    />
+  </View>
+);
+
 const styles = StyleSheet.create({
+  card: {
+    marginBottom: theme.spacing.md,
+  },
   title: {
     fontSize: theme.fonts.sizes.lg,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: theme.spacing.sm,
     color: theme.colors.textPrimary,
   },
   row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: theme.spacing.sm,
   },
   label: {
+    flex: 1,
     color: theme.colors.textSecondary,
-  },
-  value: {
-    fontWeight: '600',
-    color: theme.colors.primary,
   },
 });

@@ -1,14 +1,16 @@
 import { Text, StyleSheet } from "react-native";
 import AppCard from "../common/AppCard";
 import theme from "../../constants/theme";
-import mockHealthData from "../../data/mockHealthData";
+// import mockHealthData from "../../data/mockHealthData";
 
-export default function HealthRecommendationsCard() {
+export default function HealthRecommendationsCard({ health}) {
+  if (!health) return null;
+
   return (
     <AppCard>
       <Text style={styles.title}>Recommendations</Text>
 
-      {mockHealthData.advice.map((item, index) => (
+      {health.advice?.map((item, index) => (
         <Text key={index} style={styles.tip}>
           • {item}
         </Text>

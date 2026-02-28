@@ -33,13 +33,13 @@ export default function HealthScreen() {
           </View>
         );
       case 'overview':
-        return <HealthOverviewCard />;
+        return <HealthOverviewCard health={health} />;
       case 'metrics':
-        return <HealthMetricsCard />;
+        return <HealthMetricsCard health={health} />;
       case 'recommendations':
-        return <HealthRecommendationsCard />;
+        return <HealthRecommendationsCard health={health} />;
       case 'insights':
-        return <HealthInsights />;
+        return <HealthInsights health={health} />;
       default:
         return null;
     }

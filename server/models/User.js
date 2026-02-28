@@ -1,9 +1,13 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const PreferencesSchema = new mongoose.Schema({
   hydrationAlerts: { type: Boolean, default: true },
   heatAlerts: { type: Boolean, default: true },
   aqiAlerts: { type: Boolean, default: true },
+
+  morningBriefing: { type: Boolean, default: true },
+  extremeWeatherAlerts: { type: Boolean, default: true },
+  governmentAlerts: { type: Boolean, default: true },
 });
 
 const UserSchema = new mongoose.Schema({
@@ -13,6 +17,23 @@ const UserSchema = new mongoose.Schema({
   location: { type: String },
   preferences: { type: PreferencesSchema, default: () => ({}) },
   createdAt: { type: Date, default: Date.now },
+  age: {
+    type: Number,
+  },
+
+  gender: {
+    type: String,
+  },
+
+  occupation: {
+    type: String,
+  },
+
+  healthConditions: [
+    {
+      type: String,
+    },
+  ],
 });
 
-module.exports = mongoose.model('User', UserSchema);
+module.exports = mongoose.model("User", UserSchema);

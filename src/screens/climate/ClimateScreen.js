@@ -7,11 +7,12 @@ import WeatherDetailsCard from "../../components/climate/WeatherDetailsCard";
 import TemperatureChart from "../../components/climate/TemperatureChart";
 import AQIChart from "../../components/climate/AQIChart";
 import AQILegend from "../../components/climate/AQILegend";
-import useClimate from "../../hooks/useClimate";
+// import useClimate from "../../hooks/useClimate";
 import FullscreenLoader from "../../components/common/FullscreenLoader";
+import { useClimateContext } from "../../context/ClimateContext";
 
 export default function ClimateScreen() {
-  const { climate, loading } = useClimate();
+  const { climate, loading } = useClimateContext();
   const insets = useSafeAreaInsets();
 
   if (loading) return <FullscreenLoader message="Loading climate data..." />;

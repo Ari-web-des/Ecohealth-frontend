@@ -1,16 +1,20 @@
-import React, { createContext, useState, useEffect } from 'react';
-import { getItem, setItem } from '../utils/storage';
-import { setToken, getToken, deleteToken } from '../utils/secureStore';
+import React, { createContext, useState, useEffect } from "react";
+import { getItem, setItem } from "../utils/storage";
+import { setToken, getToken, deleteToken } from "../utils/secureStore";
 
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [auth, setAuth] = useState({ isAuthenticated: false, user: null, token: null });
+  const [auth, setAuth] = useState({
+    isAuthenticated: false,
+    user: null,
+    token: null,
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadAuth = async () => {
-      const stored = await getItem('auth');
+      const stored = await getItem("auth");
       const token = await getToken();
       if (stored && stored.isAuthenticated) {
         setAuth({ ...stored, token: token || null });
@@ -22,16 +26,33 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (userObj, token = null) => {
-    const newAuth = { isAuthenticated: true, user: userObj, token };
+    // Normalize user object (force _id always)
+    const normalizedUser = {
+      _id: userObj._id || userObj.id,
+      name: userObj.name,
+      email: userObj.email,
+    };
+
+    const newAuth = {
+      isAuthenticated: true,
+      user: normalizedUser,
+      token,
+    };
+
     setAuth(newAuth);
-    await setItem('auth', { isAuthenticated: true, user: userObj });
+
+    await setItem("auth", {
+      isAuthenticated: true,
+      user: normalizedUser,
+    });
+
     if (token) await setToken(token);
   };
 
   const logout = async () => {
     const newAuth = { isAuthenticated: false, user: null, token: null };
     setAuth(newAuth);
-    await setItem('auth', newAuth);
+    await setItem("auth", newAuth);
     await deleteToken();
   };
 

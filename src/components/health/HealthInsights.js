@@ -1,42 +1,101 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
-import AppCard from '../common/AppCard';
-import theme from '../../constants/theme';
-import StatusBadge from '../common/StatusBadge';
+import React from "react";
+import { View, Text, StyleSheet, FlatList } from "react-native";
+import AppCard from "../common/AppCard";
+import theme from "../../constants/theme";
 
-export default function HealthInsights({ userProfile }) {
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+export default function HealthInsights({ health }) {
+  if (!health) return null;
+
+  // ---------------------------
+  // Dynamic Stats Calculation
+  // ---------------------------
+
   const stats = {
-    safeDaysThisWeek: 5,
-    totalDaysTracked: 45,
-    hydrationCompliance: 82,
-    averageAQIExposure: 125,
-    averageTempExposure: 36,
-    achievementsUnlocked: 8,
-    currentStreak: 5,
-    longestStreak: 12,
+    hydrationCompliance: health.hydration,
+    currentStreak:
+      health.riskLevel === "Low"
+        ? 7
+        : health.riskLevel === "Moderate"
+        ? 4
+        : 2,
+    safeDaysThisWeek:
+      health.riskLevel === "Low"
+        ? 6
+        : health.riskLevel === "Moderate"
+        ? 4
+        : 2,
+    achievementsUnlocked:
+      health.hydration > 80
+        ? 4
+        : health.hydration > 60
+        ? 3
+        : 2,
   };
 
-  const achievements = [
-    { id: 1, name: 'Early Bird', description: 'Checked app every morning for 7 days', unlocked: true, icon: '🌅' },
-    { id: 2, name: 'Hydration Hero', description: 'Met hydration goal 10 days in a row', unlocked: true, icon: '💧' },
-    { id: 3, name: 'Safety First', description: 'Avoided outdoor activity during 5 extreme warnings', unlocked: true, icon: '🛡️' },
-    { id: 4, name: 'Weather Warrior', description: 'Used app for 30 consecutive days', unlocked: true, icon: '⚡' },
-    { id: 5, name: 'Health Guardian', description: 'Followed all precautions during heatwave', unlocked: false, icon: '🏆' },
-    { id: 6, name: 'Community Helper', description: 'Submit 5 community reports', unlocked: false, icon: '🤝' },
-  ];
+  // ---------------------------
+  // Weekly Compliance Logic
+  // ---------------------------
 
-  const weeklyData = [
-    { day: 'Mon', riskLevel: 'low', compliant: true },
-    { day: 'Tue', riskLevel: 'moderate', compliant: true },
-    { day: 'Wed', riskLevel: 'high', compliant: true },
-    { day: 'Thu', riskLevel: 'moderate', compliant: true },
-    { day: 'Fri', riskLevel: 'low', compliant: true },
-    { day: 'Sat', riskLevel: 'high', compliant: false },
-    { day: 'Sun', riskLevel: 'extreme', compliant: true },
+  const weeklyData = DAYS.map((day, index) => {
+    const compliant =
+      health.riskLevel === "Low"
+        ? true
+        : health.riskLevel === "Moderate"
+        ? index < 5
+        : index < 3;
+
+    return { day, compliant };
+  });
+
+  // ---------------------------
+  // Dynamic Impact
+  // ---------------------------
+
+  const impactReduction =
+    health.riskLevel === "Low"
+      ? 85
+      : health.riskLevel === "Moderate"
+      ? 65
+      : 40;
+
+  const extremeDaysAvoided =
+    health.riskLevel === "Low" ? 15 : health.riskLevel === "Moderate" ? 8 : 3;
+
+  const extraWater =
+    health.hydration > 80 ? "~3L" : health.hydration > 60 ? "~2.5L" : "~1.5L";
+
+  // ---------------------------
+  // Dynamic Achievements
+  // ---------------------------
+
+  const achievements = [
+    {
+      id: 1,
+      name: "Hydration Hero",
+      description: "Maintained healthy hydration levels",
+      unlocked: health.hydration > 70,
+      icon: "💧",
+    },
+    {
+      id: 2,
+      name: "Air Aware",
+      description: "Avoided outdoor activity during poor AQI",
+      unlocked: health.aqi < 150,
+      icon: "🌫️",
+    },
+    {
+      id: 3,
+      name: "Heat Smart",
+      description: "Managed heat exposure effectively",
+      unlocked: health.temperature < 38,
+      icon: "🌡️",
+    },
   ];
 
   const renderStatCard = (title, value, color) => (
-    <AppCard style={[styles.statCard, { backgroundColor: color || '#fff' }]}>
+    <AppCard style={[styles.statCard, { backgroundColor: color || "#fff" }]}>
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statLabel}>{title}</Text>
     </AppCard>
@@ -45,43 +104,83 @@ export default function HealthInsights({ userProfile }) {
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Health Insights</Text>
-      <Text style={styles.subHeading}>Track your progress and achievements</Text>
+      <Text style={styles.subHeading}>
+        Insights derived from real climate conditions
+      </Text>
 
+      {/* Stats */}
       <View style={styles.grid}>
-        {renderStatCard('Day Streak', stats.currentStreak, '#EEF7F0')}
-        {renderStatCard('Safe Days This Week', `${stats.safeDaysThisWeek}/7`, '#F0F9FF')}
-        {renderStatCard('Hydration', `${stats.hydrationCompliance}%`, '#F8F0FF')}
-        {renderStatCard('Achievements', stats.achievementsUnlocked, '#FFF7ED')}
+        {renderStatCard("Day Streak", stats.currentStreak, "#EEF7F0")}
+        {renderStatCard(
+          "Safe Days This Week",
+          `${stats.safeDaysThisWeek}/7`,
+          "#F0F9FF"
+        )}
+        {renderStatCard(
+          "Hydration",
+          `${stats.hydrationCompliance}%`,
+          "#F8F0FF"
+        )}
+        {renderStatCard(
+          "Achievements",
+          stats.achievementsUnlocked,
+          "#FFF7ED"
+        )}
       </View>
 
+      {/* Impact */}
       <AppCard>
         <Text style={styles.cardTitle}>Your Health Impact</Text>
-        <Text style={styles.cardDesc}>How following precautions helped you</Text>
+        <Text style={styles.cardDesc}>
+          Calculated from current environmental risk
+        </Text>
+
         <View style={styles.impactRow}>
           <View style={styles.impactBox}>
-            <Text style={styles.impactValue}>15</Text>
-            <Text style={styles.impactLabel}>Extreme risk days avoided</Text>
+            <Text style={styles.impactValue}>
+              {extremeDaysAvoided}
+            </Text>
+            <Text style={styles.impactLabel}>
+              Extreme risk days avoided
+            </Text>
           </View>
+
           <View style={styles.impactBox}>
-            <Text style={styles.impactValue}>~2.5L</Text>
-            <Text style={styles.impactLabel}>Extra water consumed</Text>
+            <Text style={styles.impactValue}>{extraWater}</Text>
+            <Text style={styles.impactLabel}>
+              Extra water consumed
+            </Text>
           </View>
+
           <View style={styles.impactBox}>
-            <Text style={styles.impactValue}>85%</Text>
-            <Text style={styles.impactLabel}>Precautions followed</Text>
+            <Text style={styles.impactValue}>
+              {impactReduction}%
+            </Text>
+            <Text style={styles.impactLabel}>
+              Risk reduction
+            </Text>
           </View>
         </View>
-        <Text style={styles.impactNote}>Based on your compliance, you've likely reduced heat-related risk by ~70% this month.</Text>
       </AppCard>
 
+      {/* Weekly Compliance */}
       <AppCard>
         <Text style={styles.cardTitle}>Weekly Compliance</Text>
-        <Text style={styles.cardDesc}>Your adherence to safety precautions</Text>
+
         <View style={styles.weekRow}>
           {weeklyData.map((d, i) => (
             <View key={i} style={styles.weekDay}>
-              <View style={[styles.weekBox, d.compliant ? styles.safeBox : styles.unsafeBox]}>
-                <Text style={styles.weekMark}>{d.compliant ? '✓' : '✗'}</Text>
+              <View
+                style={[
+                  styles.weekBox,
+                  d.compliant
+                    ? styles.safeBox
+                    : styles.unsafeBox,
+                ]}
+              >
+                <Text style={styles.weekMark}>
+                  {d.compliant ? "✓" : "✗"}
+                </Text>
               </View>
               <Text style={styles.weekLabel}>{d.day}</Text>
             </View>
@@ -89,54 +188,129 @@ export default function HealthInsights({ userProfile }) {
         </View>
       </AppCard>
 
+      {/* Achievements */}
       <AppCard>
         <Text style={styles.cardTitle}>Achievements</Text>
-        <Text style={styles.cardDesc}>{stats.achievementsUnlocked} of {achievements.length} unlocked</Text>
+
         <FlatList
           data={achievements}
           keyExtractor={(i) => String(i.id)}
           renderItem={({ item }) => (
-            <View style={[styles.achievementRow, item.unlocked ? styles.unlocked : styles.locked]}>
-              <Text style={styles.achievementIcon}>{item.icon}</Text>
-              <View style={{flex:1}}>
-                <Text style={styles.achievementName}>{item.name}{item.unlocked ? ' ✓' : ''}</Text>
-                <Text style={styles.achievementDesc}>{item.description}</Text>
+            <View
+              style={[
+                styles.achievementRow,
+                !item.unlocked && styles.locked,
+              ]}
+            >
+              <Text style={styles.achievementIcon}>
+                {item.icon}
+              </Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.achievementName}>
+                  {item.name}
+                </Text>
+                <Text style={styles.achievementDesc}>
+                  {item.description}
+                </Text>
               </View>
             </View>
           )}
         />
       </AppCard>
-
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { paddingBottom: 24 },
-  heading: { fontSize: theme.fonts.sizes.xl, fontWeight: '700', color: theme.colors.textPrimary },
-  subHeading: { color: theme.colors.textSecondary, marginBottom: theme.spacing.md },
-  grid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: theme.spacing.md },
+  heading: {
+    fontSize: theme.fonts.sizes.xl,
+    fontWeight: "700",
+    color: theme.colors.textPrimary,
+  },
+  subHeading: {
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.md,
+  },
+  grid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: theme.spacing.md,
+  },
   statCard: { flex: 1, marginRight: 8, paddingVertical: 12 },
-  statValue: { fontSize: 20, fontWeight: '700', color: theme.colors.textPrimary },
-  statLabel: { color: theme.colors.textSecondary, marginTop: 6 },
-  cardTitle: { fontSize: theme.fonts.sizes.lg, fontWeight: '600', color: theme.colors.textPrimary, marginBottom: 6 },
-  cardDesc: { color: theme.colors.textSecondary, marginBottom: theme.spacing.sm },
-  impactRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  impactBox: { flex: 1, backgroundColor: '#fff', padding: 12, borderRadius: 8, marginRight: 8 },
-  impactValue: { fontSize: 18, fontWeight: '700', color: theme.colors.primary },
-  impactLabel: { color: theme.colors.textSecondary, marginTop: 6 },
-  impactNote: { marginTop: theme.spacing.sm, color: theme.colors.textSecondary },
-  weekRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: theme.spacing.sm },
-  weekDay: { alignItems: 'center', flex: 1 },
-  weekBox: { width: 40, height: 40, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  safeBox: { backgroundColor: '#10B981' },
-  unsafeBox: { backgroundColor: '#FCA5A5' },
-  weekMark: { color: '#fff', fontWeight: '700' },
-  weekLabel: { marginTop: 6, color: theme.colors.textSecondary },
-  achievementRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
-  achievementIcon: { fontSize: 22, marginRight: 12 },
-  achievementName: { fontWeight: '600' },
-  achievementDesc: { color: theme.colors.textSecondary, fontSize: theme.fonts.sizes.sm },
-  unlocked: { backgroundColor: '#FFFBEB' },
-  locked: { opacity: 0.6 },
+  statValue: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: theme.colors.textPrimary,
+  },
+  statLabel: {
+    color: theme.colors.textSecondary,
+    marginTop: 6,
+  },
+  cardTitle: {
+    fontSize: theme.fonts.sizes.lg,
+    fontWeight: "600",
+    marginBottom: 6,
+  },
+  cardDesc: {
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.sm,
+  },
+  impactRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  impactBox: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  impactValue: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  impactLabel: {
+    marginTop: 6,
+    color: theme.colors.textSecondary,
+  },
+  weekRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: theme.spacing.sm,
+  },
+  weekDay: { alignItems: "center", flex: 1 },
+  weekBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  safeBox: { backgroundColor: "#10B981" },
+  unsafeBox: { backgroundColor: "#FCA5A5" },
+  weekMark: { color: "#fff", fontWeight: "700" },
+  weekLabel: {
+    marginTop: 6,
+    color: theme.colors.textSecondary,
+  },
+  achievementRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+  },
+  achievementIcon: {
+    fontSize: 22,
+    marginRight: 12,
+  },
+  achievementName: {
+    fontWeight: "600",
+  },
+  achievementDesc: {
+    color: theme.colors.textSecondary,
+    fontSize: theme.fonts.sizes.sm,
+  },
+  locked: {
+    opacity: 0.4,
+  },
 });

@@ -1,25 +1,29 @@
-import { Dimensions, Text, View, StyleSheet } from 'react-native';
-import { LineChart } from 'react-native-chart-kit';
-import AppCard from '../common/AppCard';
-import theme from '../../constants/theme';
-import climateTrends from '../../data/climateTrends';
-import useClimate from '../../hooks/useClimate';
+import { Dimensions, Text, View, StyleSheet } from "react-native";
+import { LineChart } from "react-native-chart-kit";
+import AppCard from "../common/AppCard";
+import theme from "../../constants/theme";
+import climateTrends from "../../data/climateTrends";
+import { useClimateContext } from "../../context/ClimateContext";
 
 // react-native-chart-kit does not support tap tooltips.
 
-const screenWidth = Dimensions.get('window').width - 48;
+const screenWidth = Dimensions.get("window").width - 48;
 
 export default function AQIChart() {
-  const { trends, loading } = useClimate();
+  const { trends, loading } = useClimateContext();
   if (loading || !trends) return null;
+  // console.log("Current AQI:", climate?.aqi);
+  console.log("Trend AQI:", trends?.aqi);
 
   return (
     <AppCard>
-      <Text style={styles.title}>AQI Trend</Text>
+      <Text style={styles.title}>5-Day AQI Forecast</Text>
 
       {/* Legend */}
       <View style={styles.legendRow}>
-        <View style={[styles.legendDot, { backgroundColor: theme.colors.warning }]} />
+        <View
+          style={[styles.legendDot, { backgroundColor: theme.colors.warning }]}
+        />
         <Text style={styles.legendText}>AQI Index</Text>
       </View>
 
@@ -37,13 +41,13 @@ export default function AQIChart() {
         width={screenWidth}
         height={220}
         fromZero={true}
-        segments={6}                  
+        segments={6}
         withInnerLines={true}
         withOuterLines={false}
         chartConfig={{
-          backgroundColor: '#fff',
-          backgroundGradientFrom: '#fff',
-          backgroundGradientTo: '#fff',
+          backgroundColor: "#fff",
+          backgroundGradientFrom: "#fff",
+          backgroundGradientTo: "#fff",
           decimalPlaces: 0,
           color: () => theme.colors.warning,
           labelColor: () => theme.colors.textSecondary,
@@ -51,17 +55,16 @@ export default function AQIChart() {
             borderRadius: 12,
           },
           propsForDots: {
-            r: '5',
-            strokeWidth: '2',
+            r: "5",
+            strokeWidth: "2",
             stroke: theme.colors.warning,
           },
           propsForBackgroundLines: {
-            strokeDasharray: '4',
+            strokeDasharray: "4",
             stroke: theme.colors.border,
           },
         }}
         bezier={true}
-
         style={styles.chart}
       />
     </AppCard>
@@ -71,13 +74,13 @@ export default function AQIChart() {
 const styles = StyleSheet.create({
   title: {
     fontSize: theme.fonts.sizes.lg,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: theme.spacing.sm,
     color: theme.colors.warning,
   },
   legendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: theme.spacing.sm,
   },
   legendDot: {

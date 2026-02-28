@@ -2,15 +2,15 @@ import { View, Text, StyleSheet } from "react-native";
 import AppCard from "../common/AppCard";
 import theme from "../../constants/theme";
 // import mockHealthData from '../../data/mockHealthData';
-import useHealth from "../../hooks/useHealth";
+// import useHealth from "../../hooks/useHealth";
 import Loader from "../common/Loader";
 import EmptyState from "../common/EmptyState";
 
-export default function HealthMetricsCard() {
-  const { health, loading } = useHealth();
+export default function HealthMetricsCard({ health}) {
+  if (!health) return null;
 
-  if (loading) return <Loader />;
-  if (!health) return <EmptyState message="Health metrics unavailable" />;
+  // if (loading) return <Loader />;
+  // if (!health) return <EmptyState message="Health metrics unavailable" />;
 
   return (
     <AppCard>

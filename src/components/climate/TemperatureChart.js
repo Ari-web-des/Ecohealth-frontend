@@ -3,16 +3,18 @@ import { LineChart } from 'react-native-chart-kit';
 import AppCard from '../common/AppCard';
 import theme from '../../constants/theme';
 import climateTrends from '../../data/climateTrends';
-import useClimate from '../../hooks/useClimate';
+import { useClimateContext } from "../../context/ClimateContext";
 
 const screenWidth = Dimensions.get('window').width - 48;
 
 export default function TemperatureChart() {
-  const { trends, loading } = useClimate();
+  const { trends, loading } = useClimateContext();
   if (loading || !trends) return null;
+  console.log("TRENDS DATA:", trends);
   return (
     <AppCard>
       <Text style={styles.title}>Temperature Trend (°C)</Text>
+      
 
       {/* Legend */}
       <View style={styles.legendRow}>
