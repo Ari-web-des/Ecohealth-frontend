@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useContext, useRef } from 'react';
 import { ScrollView, Text, StyleSheet, Animated, View, TouchableOpacity, TextInput } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import theme from '../../constants/theme';
 import AppCard from '../../components/common/AppCard';
 import PreferencesCard from '../../components/profile/PreferencesCard';
@@ -13,10 +14,11 @@ import { Ionicons } from '@expo/vector-icons';
 export default function ProfileScreen() {
   const { auth, logout } = useContext(AuthContext);
   const navigation = useNavigation();
-  const userId = auth?.user?.id || 'guest';
+  const insets = useSafeAreaInsets();
+  const userId = auth?.user?.id;
 
   const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!userId);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState('');
@@ -29,6 +31,14 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     let mounted = true;
+    
+    // If no userId, user is not logged in
+    if (!userId) {
+      setLoading(false);
+      setError('Not authenticated');
+      return;
+    }
+
     const fetchProfile = async () => {
       setLoading(true);
       const data = await getProfile(userId, auth?.token || null);
@@ -40,7 +50,7 @@ export default function ProfileScreen() {
 
     fetchProfile();
     return () => (mounted = false);
-  }, [userId]);
+  }, [userId, auth?.token]);
 
   const handlePrefChange = async (newPrefs) => {
     setProfile((p) => ({ ...p, preferences: newPrefs }));
@@ -95,17 +105,23 @@ export default function ProfileScreen() {
 
   if (loading) return <Loader />;
 
-  if (!profile && !loading) {
+  if (!profile || error) {
     return (
       <Animated.View style={{ opacity: fadeAnim }}>
-        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top }]}>
           <AppCard>
             <Text style={styles.name}>Profile unavailable</Text>
-            <Text style={styles.subHeading}>Couldn't load your profile. Try reloading or login again.</Text>
+            <Text style={styles.subHeading}>
+              {error === 'Not authenticated' 
+                ? 'You need to log in to view your profile.' 
+                : 'Unable to connect to the profile service. Please ensure the backend server is running (http://localhost:5000) and try reloading.'}
+            </Text>
             <View style={{ flexDirection: 'row', marginTop: theme.spacing.md }}>
-              <TouchableOpacity style={[styles.saveBtn, { marginRight: theme.spacing.sm }]} onPress={reloadProfile}>
-                <Text style={styles.saveText}>Reload</Text>
-              </TouchableOpacity>
+              {error !== 'Not authenticated' && (
+                <TouchableOpacity style={[styles.saveBtn, { marginRight: theme.spacing.sm }]} onPress={reloadProfile}>
+                  <Text style={styles.saveText}>Reload</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity style={styles.logoutBtn} onPress={() => navigation.navigate('Login')}>
                 <Text style={styles.logoutText}>Login</Text>
               </TouchableOpacity>
@@ -118,7 +134,7 @@ export default function ProfileScreen() {
 
   return (
     <Animated.View style={{ opacity: fadeAnim }}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top }]}>
         <Text style={styles.heading}>Profile</Text>
         <Text style={styles.subHeading}>Your account & preferences</Text>
 
@@ -182,6 +198,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: theme.spacing.md,
+    paddingBottom: 120,
   },
   heading: {
     fontSize: theme.fonts.sizes.xl,

@@ -9,6 +9,7 @@ import {
   Linking,
   Animated,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppCard from '../../components/common/AppCard';
 import theme from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -37,6 +38,7 @@ export default function CommunityScreen() {
   const [services, setServices] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
+  const insets = useSafeAreaInsets();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -174,7 +176,7 @@ export default function CommunityScreen() {
 
   return (
     <Animated.View style={{ opacity: fadeAnim, flex: 1 }}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top }]}>
       <Text style={styles.heading}>Community Alerts & Services</Text>
 
       <View style={styles.searchRow} accessible accessibilityRole="search">
@@ -189,7 +191,7 @@ export default function CommunityScreen() {
         />
       </View>
 
-      <View style={styles.chipsRow}>
+      <ScrollView style={styles.chipsRow} horizontal showsHorizontalScrollIndicator={false}>
         {['All', 'Hospitals', 'Pharmacies', 'Cooling'].map((c) => (
           <TouchableOpacity
             key={c}
@@ -200,7 +202,7 @@ export default function CommunityScreen() {
             <Text style={[styles.chipText, category === c && styles.chipTextActive]}>{c}</Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
       <Text style={styles.sectionTitle}>Government Alerts</Text>
       {loading ? (
@@ -265,10 +267,10 @@ export default function CommunityScreen() {
                 </View>
               </View>
 
-              <View style={styles.serviceActions}>
+              <View style={styles.serviceActionsCol}>
                 <TouchableOpacity style={styles.outlineBtn} onPress={() => openMaps(s)} accessibilityLabel={`Get directions to ${s.name}`}>
                   <Ionicons name="navigate-outline" size={16} color={theme.colors.textPrimary} />
-                  <Text style={styles.outlineBtnText}>Directions</Text>
+                  <Text style={styles.outlineBtnText}>Dir</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.outlineBtn} onPress={() => callNumber(`tel:${s.phone || '+911'}`)} accessibilityLabel={`Call ${s.name}`}>
@@ -326,7 +328,7 @@ const styles = StyleSheet.create({
     height: 36,
     color: theme.colors.textPrimary,
   },
-  chipsRow: { flexDirection: 'row', marginBottom: theme.spacing.md },
+  chipsRow: { flexDirection: 'row', marginBottom: theme.spacing.md, paddingVertical: 4 },
   chip: {
     paddingHorizontal: theme.spacing.md,
     paddingVertical: 8,
@@ -335,6 +337,8 @@ const styles = StyleSheet.create({
     marginRight: theme.spacing.sm,
     borderWidth: 1,
     borderColor: theme.colors.border,
+    minWidth: 85,
+    alignItems: 'center',
   },
   chipActive: { backgroundColor: '#e9f5ef', borderColor: theme.colors.primary },
   chipText: { color: theme.colors.textSecondary },
@@ -353,14 +357,15 @@ const styles = StyleSheet.create({
   tagTextMuted: { fontSize: 12, color: theme.colors.textMuted },
   alertActions: { marginLeft: theme.spacing.md },
   iconBtn: { padding: 8 },
-  serviceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  serviceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: theme.spacing.sm },
   serviceName: { fontSize: theme.fonts.sizes.md, fontWeight: '600', color: theme.colors.textPrimary },
   serviceMeta: { fontSize: theme.fonts.sizes.sm, color: theme.colors.textSecondary, marginTop: 4 },
-  serviceMetaRow: { flexDirection: 'row', marginTop: theme.spacing.sm, alignItems: 'center' },
-  smallBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, backgroundColor: '#fff', marginRight: theme.spacing.sm, borderWidth: 1, borderColor: theme.colors.border },
+  serviceMetaRow: { flexDirection: 'row', marginTop: theme.spacing.sm, alignItems: 'center', flexWrap: 'wrap' },
+  smallBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, backgroundColor: '#fff', marginRight: theme.spacing.sm, marginBottom: 4, borderWidth: 1, borderColor: theme.colors.border },
   smallBadgeText: { fontSize: 12, color: theme.colors.textSecondary },
   serviceActions: { flexDirection: 'row' },
-  outlineBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: theme.colors.border, marginLeft: theme.spacing.sm },
-  outlineBtnText: { marginLeft: 6, color: theme.colors.textPrimary },
+  serviceActionsCol: { flexDirection: 'column', gap: 6, minWidth: 80 },
+  outlineBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: theme.colors.border },
+  outlineBtnText: { marginLeft: 4, color: theme.colors.textPrimary, fontSize: 12 },
   reportTitle: { fontSize: theme.fonts.sizes.md, fontWeight: '600', color: theme.colors.textPrimary },
 });

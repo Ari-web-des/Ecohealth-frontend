@@ -1,4 +1,5 @@
-import { ScrollView, View, Text, StyleSheet } from 'react-native';
+import { FlatList, View, Text, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import theme from '../../constants/theme';
 
 import HealthOverviewCard from '../../components/health/HealthOverviewCard';
@@ -10,22 +11,50 @@ import FullscreenLoader from '../../components/common/FullscreenLoader';
 
 export default function HealthScreen() {
   const { health, loading } = useHealth();
+  const insets = useSafeAreaInsets();
 
   if (loading) return <FullscreenLoader message="Loading health insights..." />;
 
+  const DATA = [
+    { id: 'header', type: 'header' },
+    { id: 'overview', type: 'overview' },
+    { id: 'metrics', type: 'metrics' },
+    { id: 'recommendations', type: 'recommendations' },
+    { id: 'insights', type: 'insights' },
+  ];
+
+  const renderItem = ({ item }) => {
+    switch (item.type) {
+      case 'header':
+        return (
+          <View style={styles.headerContainer}>
+            <Text style={styles.heading}>Health</Text>
+            <Text style={styles.subHeading}>Your health insights based on climate</Text>
+          </View>
+        );
+      case 'overview':
+        return <HealthOverviewCard />;
+      case 'metrics':
+        return <HealthMetricsCard />;
+      case 'recommendations':
+        return <HealthRecommendationsCard />;
+      case 'insights':
+        return <HealthInsights />;
+      default:
+        return null;
+    }
+  };
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.heading}>Health</Text>
-        <Text style={styles.subHeading}>Your health insights based on climate</Text>
-      </View>
-
-      <HealthOverviewCard />
-      <HealthMetricsCard />
-      <HealthRecommendationsCard />
-
-      <HealthInsights />
-    </ScrollView>
+    <FlatList
+      style={styles.container}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top }]}
+      data={DATA}
+      renderItem={renderItem}
+      keyExtractor={(item) => item.id}
+      scrollEnabled={true}
+      removeClippedSubviews={false}
+    />
   );
 }
 
@@ -36,6 +65,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: theme.spacing.md,
+    paddingBottom: 120,
   },
   heading: {
     fontSize: theme.fonts.sizes.xxl,

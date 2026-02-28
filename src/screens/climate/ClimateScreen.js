@@ -1,4 +1,5 @@
 import { ScrollView, View, Text, StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import theme from "../../constants/theme";
 
 import AQICard from "../../components/climate/AQICard";
@@ -11,10 +12,11 @@ import FullscreenLoader from "../../components/common/FullscreenLoader";
 
 export default function ClimateScreen() {
   const { climate, loading } = useClimate();
+  const insets = useSafeAreaInsets();
 
   if (loading) return <FullscreenLoader message="Loading climate data..." />;
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top }]}>
       <View style={styles.headerContainer}>
         <Text style={styles.heading}>Climate</Text>
         <Text style={styles.subHeading}>Air quality & weather conditions</Text>
@@ -36,6 +38,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: theme.spacing.md,
+    paddingBottom: 120,
   },
   heading: {
     fontSize: theme.fonts.sizes.xxl,

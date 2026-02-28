@@ -3,12 +3,16 @@ import { LineChart } from 'react-native-chart-kit';
 import AppCard from '../common/AppCard';
 import theme from '../../constants/theme';
 import climateTrends from '../../data/climateTrends';
+import useClimate from '../../hooks/useClimate';
 
 // react-native-chart-kit does not support tap tooltips.
 
 const screenWidth = Dimensions.get('window').width - 48;
 
 export default function AQIChart() {
+  const { trends, loading } = useClimate();
+  if (loading || !trends) return null;
+
   return (
     <AppCard>
       <Text style={styles.title}>AQI Trend</Text>
@@ -21,10 +25,10 @@ export default function AQIChart() {
 
       <LineChart
         data={{
-          labels: climateTrends.labels,
+          labels: trends.labels,
           datasets: [
             {
-              data: climateTrends.aqi,
+              data: trends.aqi,
               color: () => theme.colors.warning,
               strokeWidth: 3,
             },

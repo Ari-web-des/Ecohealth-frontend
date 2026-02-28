@@ -1,5 +1,6 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import HomeScreen from '../screens/home/HomeScreen';
 import ClimateScreen from '../screens/climate/ClimateScreen';
@@ -12,6 +13,8 @@ import theme from '../constants/theme';
 const Tab = createBottomTabNavigator();
 
 export default function BottomTabs() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -21,8 +24,10 @@ export default function BottomTabs() {
         tabBarStyle: {
           backgroundColor: '#fff',
           borderTopColor: theme.colors.border,
-          height: 60,
-          paddingBottom: 6,
+          borderTopWidth: 1,
+          height: 56 + insets.bottom,
+          paddingBottom: insets.bottom,
+          paddingTop: 8,
         },
         tabBarIcon: ({ color, size }) => {
           let iconName;
@@ -45,7 +50,12 @@ export default function BottomTabs() {
               break;
           }
 
-          return <Ionicons name={iconName} size={22} color={color} />;
+          return <Ionicons name={iconName} size={24} color={color} />;
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '500',
+          marginTop: 4,
         },
       })}
     >

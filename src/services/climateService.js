@@ -38,3 +38,18 @@ export const getAirQuality = async (lat, lon) => {
     aqiStatus: aqiMap[aqi].status,
   };
 };
+
+// Get climate trends (fallback to mock data)
+export const getClimateTrends = async (lat, lon) => {
+  try {
+    // Mock data for now - returns week of trend data
+    const trends = {
+      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      temperature: [28, 29, 30, 32, 31, 29, 28],
+      aqi: [85, 92, 105, 115, 108, 98, 88],
+    };
+    return trends;
+  } catch (e) {
+    return null;
+  }
+};

@@ -2,7 +2,9 @@ import { useEffect, useRef } from "react";
 import { Animated } from "react-native";
 
 import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import theme from "../../constants/theme";
+
 
 import ClimateSummaryCard from "../../components/climate/ClimateSummaryCard";
 import HealthSummaryCard from "../../components/health/HealthSummaryCard";
@@ -12,14 +14,14 @@ import HealthRecommendationsCard from "../../components/health/HealthRecommendat
 import useClimate from "../../hooks/useClimate";
 import useHealth from "../../hooks/useHealth";
 import FullscreenLoader from "../../components/common/FullscreenLoader";
-import ActivityPlanner from '../../components/health/ActivityPlanner';
-import useLocation from '../../hooks/useLocation';
-import { useContext } from 'react';
-import { AuthContext } from '../../context/AuthContext';
-
+import ActivityPlanner from "../../components/health/ActivityPlanner";
+import useLocation from "../../hooks/useLocation";
+import { useContext } from "react";
+import { AuthContext } from "../../context/AuthContext";
 
 export default function HomeScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const insets = useSafeAreaInsets();
   const { climate, loading: climateLoading } = useClimate();
   const { health, loading: healthLoading } = useHealth();
   const { coords } = useLocation();
@@ -38,23 +40,21 @@ export default function HomeScreen() {
   }
 
   return (
-    <Animated.View style={{ opacity: fadeAnim }}>
+    <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
       <ScrollView
         style={styles.container}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top }]}
+        showsVerticalScrollIndicator={false}
       >
         <Text style={styles.heading}>EcoHealth</Text>
         <Text style={styles.subHeading}>Climate & Health Overview</Text>
 
         <ClimateSummaryCard climate={climate} />
 
-        {/* Activity Planner moved to Home for quick access */}
-        <ActivityPlanner location={coords ? { lat: coords.latitude, lon: coords.longitude } : null} userProfile={auth?.user || null} />
+        <ActivityPlanner climate={climate} loading={climateLoading} />
 
         <HealthOverviewCard />
-
         <HealthMetricsCard />
-
         <HealthRecommendationsCard />
         <HealthSummaryCard />
       </ScrollView>
